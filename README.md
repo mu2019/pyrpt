@@ -5,6 +5,6 @@ python print out report from printer
 暂时只实现在windows平台,其它平台将需要后续添加.
 
 print out report from printer just need ctypes call system print api.
-now just support ms windows.
+support ms windows just now .
 
 
