@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Reports lib="QtRPT" programmer="Aleksey Osipov" email="aliks-os@ukr.net">
+  <Report pageNo="1" marginsBottom="8" pageHeight="400" pageWidth="360" marginsTop="8" marginsLeft="8" orientation="0" marginsRight="8">
+    <ReportBand top="8" height="30" left="8" type="ReportTitle" width="344" name="RepTitleBand">
+      <TContainerField borderTop="rgba(0,0,0,255)" name="field1" autoHeight="0" left="36" borderColor="rgba(0,0,0,255)" borderStyle="solid" backgroundColor="rgba(255,255,255,255)" fontSize="10" width="140" textWrap="1" aligmentH="hLeft" fontUnderline="1" fontStrikeout="1" top="3" fontItalic="1" printing="1" value="title中文" fontColor="rgba(255,85,0,255)" fontBold="1" fontFamily="微软雅黑" borderLeft="rgba(0,0,0,255)" aligmentV="vCenter" highlighting="" groupName="" borderWidth="1px" borderBottom="rgba(0,0,0,255)" height="34" type="label" format="" borderRight="rgba(0,0,0,255)"/>
+    </ReportBand>
+    <ReportBand top="60" height="28" left="8" type="PageHeader" width="344" name="PageHeaderBand">
+      <TContainerField borderTop="rgba(0,0,0,255)" name="field4" autoHeight="0" left="171" borderColor="rgba(0,0,0,255)" borderStyle="solid" backgroundColor="rgba(255,255,255,255)" fontSize="10" width="140" textWrap="1" aligmentH="hLeft" fontUnderline="0" fontStrikeout="0" top="5" fontItalic="0" printing="1" value="page header" fontColor="rgba(0,0,0,255)" fontBold="0" fontFamily="SimSun" borderLeft="rgba(0,0,0,255)" aligmentV="vCenter" highlighting="" groupName="" borderWidth="1px" borderBottom="rgba(0,0,0,255)" height="359" type="label" format="" borderRight="rgba(0,0,0,255)"/>
+    </ReportBand>
+    <ReportBand top="110" startNewNumeration="0" height="20" left="8" type="DataGroupHeader" width="344" groupingField="" startNewPage="0" name="DataGroupHeaderBand">
+      <TContainerField borderTop="rgba(0,0,0,255)" name="field5" autoHeight="0" left="115" borderColor="rgba(0,0,0,255)" borderStyle="solid" backgroundColor="rgba(255,255,255,255)" fontSize="10" width="140" textWrap="1" aligmentH="hLeft" fontUnderline="0" fontStrikeout="0" top="2" fontItalic="0" printing="1" value="data group header" fontColor="rgba(0,0,0,255)" fontBold="0" fontFamily="SimSun" borderLeft="rgba(0,0,0,255)" aligmentV="vCenter" highlighting="" groupName="" borderWidth="1px" borderBottom="rgba(0,0,0,255)" height="30" type="label" format="" borderRight="rgba(0,0,0,255)"/>
+    </ReportBand>
+    <ReportBand top="192" height="23" left="8" type="MasterData" width="344" name="MasterDataBand"/>
+    <ReportBand showInGroup="0" top="152" height="18" left="8" type="MasterHeader" width="344" name="MasterHeaderBand">
+      <TContainerField borderTop="rgba(0,0,0,255)" name="field2" autoHeight="0" left="68" borderColor="rgba(0,0,0,255)" borderStyle="solid" backgroundColor="rgba(255,255,255,255)" fontSize="10" width="140" textWrap="1" aligmentH="hLeft" fontUnderline="0" fontStrikeout="0" top="-5" fontItalic="0" printing="1" value="master header" fontColor="rgba(0,0,0,255)" fontBold="0" fontFamily="SimSun" borderLeft="rgba(0,0,0,255)" aligmentV="vCenter" highlighting="" groupName="" borderWidth="1px" borderBottom="rgba(0,0,0,255)" height="30" type="label" format="" borderRight="rgba(0,0,0,255)"/>
+    </ReportBand>
+    <ReportBand showInGroup="0" top="237" height="20" left="8" type="MasterFooter" width="344" name="MasterFooterBand">
+      <TContainerField borderTop="rgba(0,0,0,255)" name="field3" autoHeight="0" left="65" borderColor="rgba(0,0,0,255)" borderStyle="solid" backgroundColor="rgba(255,255,255,255)" fontSize="10" width="140" textWrap="1" aligmentH="hLeft" fontUnderline="0" fontStrikeout="0" top="-1" fontItalic="0" printing="1" value="master footer" fontColor="rgba(0,0,0,255)" fontBold="0" fontFamily="SimSun" borderLeft="rgba(0,0,0,255)" aligmentV="vCenter" highlighting="" groupName="" borderWidth="1px" borderBottom="rgba(0,0,0,255)" height="30" type="label" format="" borderRight="rgba(0,0,0,255)"/>
+    </ReportBand>
+    <ReportBand top="279" height="48" left="8" type="PageFooter" width="344" name="PageFooterBand">
+      <TContainerField borderTop="rgba(0,0,0,255)" name="field6" autoHeight="0" left="64" borderColor="rgba(0,0,0,255)" borderStyle="solid" backgroundColor="rgba(255,255,255,255)" fontSize="10" width="140" textWrap="1" aligmentH="hLeft" fontUnderline="0" fontStrikeout="0" top="7" fontItalic="0" printing="1" value="footer" fontColor="rgba(0,0,0,255)" fontBold="0" fontFamily="SimSun" borderLeft="rgba(0,0,0,255)" aligmentV="vCenter" highlighting="" groupName="" borderWidth="1px" borderBottom="rgba(0,0,0,255)" height="118" type="label" format="" borderRight="rgba(0,0,0,255)"/>
+    </ReportBand>
+  </Report>
+</Reports>
