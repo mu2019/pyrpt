@@ -7,6 +7,7 @@ from wintypes import * #BYTE, DWORD, LPCWSTR
 import wincons as wcs
 import winstruct as wst
 from PIL import ImageWin,Image,ImageDraw,ImageFont
+import time
 
 gdi32=windll.gdi32
 comdlg32 = windll.comdlg32
@@ -109,6 +110,9 @@ def getPrinterInfoByName(printer_name):
     '''
     pptn=LPCWSTR(printer_name)
     pdc=gdi32.CreateDCW("WINSPOOL",pptn,None,None)
+    pdc = 0 if not pdc else pdc
+    while c_long(pdc).value != pdc:
+        pdc=gdi32.CreateDCW("WINSPOOL",pptn,None,None)
     info={}
     if not pdc:
         return info
@@ -143,6 +147,12 @@ def selectPrinterByDlg(parent=None,setting={}):
     if parent is not None:
         dlg.hwndOwner = parent._handle
     if comdlg32.PrintDlgW(byref(dlg)) and dlg.hDC:
+        pn=cast(c_void_p(dlg.hDevMode),c_char_p)
+        #fix win64  OverflowError: Python int too large to convert to C long Error
+        while dlg.hDC != c_long(dlg.hDC).value:
+            releasePrinter(dlg)
+            dlg.hDC= 0 
+            comdlg32.PrintDlgW(byref(dlg)) #  and dlg.hDC:
         return dlg
     errcode = comdlg32.CommDlgExtendedError()
     if errcode:
@@ -180,69 +190,108 @@ def drawImageToPrinter(img,printdlg):
     #hPrnDC, iWidthLP, iHeightLP);
 
 class PrinterCanvas():
-    def __init__(self,docinfo,size):#mode,size,color=0,dcinfo={}):
+    def __init__(self,docinfo,size,unit='mm'):#mode,size,color=0,dcinfo={}):
         '''
         dcinfo:打印机dc资料
         size:畫布大小,A 3-tuple, containing (width, height,unit),unit default in mm.
         
         '''
-        size=list(size)
-        size.append('mm')
-        unit=size[2]
-        size=size[:2]
+        ## size=list(size)
+        ## size.append('mm')
+        ## unit=size[2]
+        ## size=size[:2]
+        self.Size=size
+        self.Unit=unit
+        self._DCInfo=docinfo        
         self._UnitMap={'mm':self.mmToPixel,
                        'pt':self.pointToPixel,
-                       'in':self.inchToPixel}
+                       'in':self.inchToPixel,
+                       'px':self.pixelToPixel}
         if size:
             size=self.unitToPixel(size,unit)
         else:
             size=(docinfo.get('PixelWidth'),docinfo.get('PixelHeight'))
         self._Image=Image.new('RGB',size,'white')
         self._Draw=ImageDraw.Draw(self._Image)
-        self._DCInfo=docinfo
 
-    def arc(self,xy, start, end, fill=None,unit='mm'):
+
+    def arc(self,xy, start, end, fill=None,unit=None):
         self._Draw.arc(xy,start,end,fill)
 
-    def bitmap(self,xy, bitmap, fill=None,unit='mm'):
+    def bitmap(self,xy, bitmap, fill=None,unit=None):
         self._Draw.bitmap(xy, bitmap, fill)
 
-    def chord(xy, start, end, fill=None, outline=None,unit='mm'):
+    def chord(xy, start, end, fill=None, outline=None,unit=None):
         self._Draw.chord(xy, start, end, fill, outline)
 
-    def ellipse(xy, fill=None, outline=None,unit='mm'):
+    def clone(self,size):
+        '''
+        clone the canvas in size
+        size: tuple,canvas size
+        '''
+        return PrinterCanvas(self._DCInfo,size,self.Unit)
+
+    def createFont(self,font):
+        '''
+        font: a tuple (fontfilename, size, index, encoding)
+                    size in pt
+               or ImageFont instance
+            
+        '''
+        if isinstance(font,(list,tuple)):
+            fnt=dict(zip(FontParaName[:len(font)],font))
+            fsize=self._DCInfo['DPI']/self._DCInfo['DisplayDPI']*fnt.get('size',10)*(24/18)
+            fnt['size']=int(fsize)
+            font=ImageFont.truetype(**fnt)
+        return font
+      
+    def ellipse(xy, fill=None, outline=None,unit=None):
         self._Draw.ellipse(xy, fill, outline)
 
     def inchToPixel(self,inch):
         p=inch*self._DCInfo['DPI']
         return 1 if 0<p<1 else int(p) 
 
-    def line(self,xy, fill=None, width=0,unit='mm'):
-        xy=self.unitToPixel(xy)
+    def line(self,xy, fill=None, width=0,unit=None):
+        xy=self.unitToPixel(xy,unit)
+        width=self.unitToPixel(width,unit)
         self._Draw.line(xy, fill, width)
 
     def label(self,label):
         '''
         draw label
-        字體轉換
         計算顯示尺寸
         比較標籤大小寫
         是否換行,
+        label: report.ContainerField object
         
         '''
-        
-        pass
+        if label.TextWrap == '1':
+            pass
+        else:
+            pass
+
 
     def mmToPixel(self,mm):
         p=mm*self._DCInfo['DPM']
-        return 1 if 0<p<1 else int(p) 
+        return 1 if 0<p<1 else int(p)
 
-      
+    def paste(self,im,box=None,mask=None,unit=None):
+        '''
+        see pillow Image.paste
+        
+        '''
+        box = None if not box else tuple(self.unitToPixel(box,unit))
+        if isinstance(im,PrinterCanvas):
+            im=im._Image
+        self._Image.paste(im,box,mask)
+        
+
     def pointToPixel(pt):
         p=pt*self._DCInfo['DPI']/72
         return 1 if 0<p<1 else int(p) 
     
-    def pieslice(self,xy, start, end, fill=None, outline=None,unit='mm'):
+    def pieslice(self,xy, start, end, fill=None, outline=None,unit=None):
         self._Draw.pieslice(xy, start, end, fill, outline)
 
     def point(self,xy, fill=None,unit='mm'):
@@ -255,47 +304,54 @@ class PrinterCanvas():
     def printOut(self,dc):
         ImageWin.Dib(self._Image).draw(dc,(0,0,self._Image.size[0],self._Image.size[1]))
 
-    def polygon(self,xy, fill=None, outline=None,unit='mm'):
+    def polygon(self,xy, fill=None, outline=None,unit=None):
         self._Draw.polygon(xy, fill, outline)
 
-    def rectangle(self,xy, fill=None, outline=None,unit='mm'):
+    def rectangle(self,xy, fill=None, outline=None,unit=None):
         self._Draw.rectangle(xy, fill, outline)
 
-    def size(self):
-        return self._Image.size
+    def size(self,unit='px'):
+        sz=self._Image.size
+        if unit == 'mm':
+            sz = (sz[0]/self._DCInfo['DPM'],sz[1]/self._DCInfo['DPM'])
+        elif unit == 'in':
+            sz = (sz[0]/self._DCInfo['DPI'],sz[1]/self._DCInfo['DPI'])
+        elif unit == 'pt':
+            sz = (sz[0]*72/self._DCInfo['DPI'],sz[1]*72/self._DCInfo['DPI'])
+        return sz
 
-
-
-    def text(self,xy, text, fill=None, font=('arial.ttf',10), anchor=None,unit='mm'):
+    def text(self,xy, text, fill=None, font=('arial.ttf',10), anchor=None,unit=None):
         '''
         将字体尺寸转为打印尺寸
         打印机DPI/显示器DPI*字体尺寸*尺寸调整系数(24/18)
             (24/18)是經實際打印對比後量度後得到的比例,可能因為不同打印機係數不一樣
-        font:(font, size, index, encoding)
+        font:(font, size, index, encoding) or FreeTypeFont object
         '''
-
-        fnt=dict(zip(FontParaName[:len(font)],font))
-        fsize=self._DCInfo['DPI']/self._DCInfo['DisplayDPI']*fnt.get('size',10)*(24/18)
-        fnt['size']=int(fsize)
-        font=ImageFont.truetype(**fnt)
+        font = self.createFont(font)
         xy=self.unitToPixel(xy,unit)
         self._Draw.text(xy, text, fill, font, anchor)
 
-    def multiline_text(self,xy, text, fill=None, font=('arial.ttf',10), anchor=None, spacing=0, align="left",unit='mm'):
+    def multiline_text(self,xy, text, fill=None, font=('arial.ttf',10), anchor=None, spacing=0, align="left",unit=None):
         self._Draw.multiline_text(xy, text, fill, font, anchor, spacing, align)
 
     def textsize(self,text, font=('arial.ttf',10)):
+        font = self.createFont(font)
         sz=self._Draw.textsize(text, font)
         return sz
 
     def multiline_textsize(self,text, font=('arial.ttf',10), spacing=0):
+        font = self.createFont(font)
         sz=self._Draw.multiline_textsize(text, font, spacing)
         return sz
 
-    def unitToPixel(self,xy,unit='mm'):
+    def pixelToPixel(self,xy,unit=None):
+        return xy
+
+    def unitToPixel(self,xy,unit=None):
         '''
         xy:需转换单位的数字或数字列表
         '''
+        unit=unit if unit else self.Unit
         if unit not in self._UnitMap:
             return xy
         if type(xy) in (int,float):
@@ -304,8 +360,32 @@ class PrinterCanvas():
             return [self.unitToPixel(i,unit) for i in xy]
         else:
             raise Exception('paramater xy error,must be int or float or list/tuple.')
+
+    def wrapText(self,text,font,border=(0,0,'px')):
+        '''
+        将需要换行的文本按标签宽度切成多段
+        返回列表
+        font: ImageFont instance
+        border: a tupe (left,right,unit) border width
+        '''
+
+        pxw,pxh=self.size()
+        txt = text.replace('\n\r','\n').replace('\r\n','\n').replace('\r','\n').split('\n')
+        rtxt=[]
+        bdl,bdr=self.unitToPixel(border[:2],border[2])
+        ts=''
+        i=1
+        for tx in txt:
+            while i <= len(tx):
+                w,h=self.textsize(tx[:i],font)
+                if w > (pxw-bdl-bdr):
+                    rtxt.append(tx[:i-1])
+                    tx = tx[i-1:]
+                    i=0
+                i += 1
+            rtxt.append(tx)
+        return '\n'.join(rtxt)
                 
-            
 class WinPrinter:
     '''
     pt   磅或点数，是point简称 1磅=0.03527厘米=1/72英寸
@@ -334,7 +414,8 @@ class WinPrinter:
         self.Pages=[]
 
     def __del__(self):
-        print('__del__')
+        #print('WinPrinter.__del__')
+        pass
 
     def newPage(self,size=()):#page={}):
         '''
