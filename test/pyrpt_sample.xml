@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TprtReports Author="Chen MuSheng" Email="sheng.2179@gmail.com" Lib="PyRpt" Version="0.1">
+  <TprtDataSource Name="DataSource1" Engine="Builtin" EngineName="SqlCon" >
+    <TprtSqlQuery Name="SqlQury1" SqlText="" />
+  </TprtDataSource>
+  <TprtDataSource Name="DataSource2" Engine="Builtin" EngineName="HpptCon" >
+    <TprtHttpRst Name="HttpRst1" Uri="" ReqFields="" Filters=""/>
+  </TprtDataSource>
+  <TprtDataSource Name="DataSource3" Engine="Builtin" EngineName="" >
+    <TprtPyObject Name="PyObject1"  Object="obj1" />
+  </TprtDataSource>
+
+  <TprtReportPage Name="Report1"  PapeWidth="215.9" PapeHeight="279"  MarginRight="5" MarginLeft="5" MarginTop="5" MarginBottom="5" ColumnWidth="0" Unit="mm">
+    <TprtReportTitleBand Name="ReportTitleBand1" Height="154.96073" Left="0" Top="0" Width="205.9">
+      <!--FontStyle: Strikeout,Underline,Italic,Bold(Nomral,"") -->
+      <!--BorderStyle: Top,Right,Bottom,Left = solid,solid,solid,solid(solid) -->
+      <TprtLabelField Name="Memo3" Left="0" Top="3.77953" Width="75.906" Height="18.89765" ShowHint="False" FontColor="rgba(0,0,0,255)" FontSize="16" FontName="Arial" FontStyle="Normal" HAlign="Center" ParentFont="False" VAlign="Center" Text="demo" Printing="True" BackgroundColor="rgba(255,255,255,255)" TextWrap="True" BorderColor="rgba(0,0,0,255)" BorderStyle="none"  BorderWidth="1px" DisplayFormat=""/>
+      <TprtShapeField Name="Shape1" ShapeType="Ellipse"  Left="0" Top="3.77953" Width="75.906" Height="18.89765" ShowHint="False" FontColor="rgba(0,0,0,255)" FontSize="16" FontName="Arial" FontStyle="Normal" HAlign="Center" ParentFont="False" VAlign="Center" Text="demo" Printing="True" BackgroundColor="rgba(255,255,255,255)" TextWrap="True" BorderColor="rgba(0,0,0,255)" BorderStyle="none"  BorderWidth="1px" DisplayFormat=""/>
+
+      <TprtImageField Name="Memo3" Left="0" Top="3.77953" Width="755.906" Height="18.89765" ShowHint="False" FontColor="rgba(0,0,0,255)" FontSize="16" FontName="Arial" FontStyle="Normal" HAlign="Center" ParentFont="False" VAlign="Center" Text="demo123" Printing="True" BackgroundColor="rgba(255,255,255,255)" TextWrap="True" BorderColor="rgba(0,0,0,255)" BorderStyle="None"  BorderWidth="1px" DisplayFormat=""  Image="base64 enocde" Transparent="False" TransparentColor="rgba(0,0,0,255)"/>
+      <TprtBarCodeField Name="BarCode1" BarType="CODE128B" Left="0" Top="3.77953" Width="755.906" Height="18.89765" ShowHint="False" FontColor="rgba(0,0,0,255)" FontSize="16" FontName="Arial" FontStyle="Normal" HAlign="Center" ParentFont="False" VAlign="Center" Text="123456" Printing="True" BackgroundColor="rgba(255,255,255,255)" TextWrap="True" BorderColor="rgba(0,0,0,255)" BorderStyle="none"  BorderWidth="1px" DisplayFormat=""  Image="base64 enocde" Transparent="False" TransparentColor="rgba(0,0,0,255)"/>
+    </TprtReportTitleBand>
+    <TprtMasterDataBand Name="MasterDataBand1" Height="154.96073" Left="0" Top="18.89765" Width="778.205227" DataSource="DataSource1" DataSet="PyObject1">
+      <TrptLabelField  Name="Memo3" Left="0" Top="3.77953" Width="755.906" Height="18.89765" ShowHint="False" FontColor="rgba(0,0,0,255)" FontSize="16" FontName="Arial" FontStyle="Normal" HAlign="Center" ParentFont="False" VAlign="Center" Text="[Order.&#34;CustomerMaterialNo&#34;]" Printing="True" BackgroundColor="rgba(255,255,255,255)" TextWrap="True" BorderColor="rgba(0,0,0,255)" BorderStyle="none"  BorderWidth="1px" DisplayFormat="" />   
+    </TprtMasterDataBand>
+    <TprtDetailDataBand Name="MasterDataBand1" Height="154.96073" Left="0" Top="18.89765" Width="778.205227" DataSource="DataSource1" DataSet="PyObject1">
+      <TrptLabelField  Name="Memo3" Left="0" Top="3.77953" Width="755.906" Height="18.89765" ShowHint="False" FontColor="rgba(0,0,0,255)" FontSize="16" FontName="Arial" FontStyle="Normal" HAlign="Center" ParentFont="False" VAlign="Center" Text="[Order.&#34;sCustomerMaterialNo&#34;]&#13;&#10;[Order.&#34;sCustomerMaterialName&#34;]&#13;&#10;[Order.&#34;sOrderLot&#34;]" Printing="True" BackgroundColor="rgba(255,255,255,255)" TextWrap="True" BorderColor="rgba(0,0,0,255)" BorderStyle="None"  BorderWidth="1px" DisplayFormat="" />   
+    </TprtDetailDataBand>
+  </TprtReportPage>
+</TprtReports>    

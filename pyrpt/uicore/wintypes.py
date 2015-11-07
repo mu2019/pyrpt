@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from ctypes import * #POINTER,c_void_p,CFUNCTYPE,c_int,byref,pointer,c_wchar
 from ctypes.wintypes import *
-import sysinfo
+from . import sysinfo
 
 LPPRINTHOOKPROC = c_void_p
 LPSETUPHOOKPROC = c_void_p

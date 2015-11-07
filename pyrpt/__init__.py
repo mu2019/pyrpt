@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from collections import OrderedDict
+from datetime import datetime
 
 class AttrDict(object):
     def __init__(self,dict_data={},read_only=False):
@@ -22,6 +23,12 @@ class AttrDict(object):
         assert not self.__dict__['ReadOnly'],'object just read only.'
         self.__dict__['data'][attr]=value
 
+    def __delitem__(self,attr):
+        self.__dict__['data'].pop(attr)
+
+    def __delattr__(self,attr):
+        self.__dict__['data'].pop(attr)        
+
     def keys(self):
         return self.__dict__['data'].keys()
 
@@ -33,3 +40,10 @@ class AttrDict(object):
 
     def update(self,adict):
         self.__dict__['data'].update(adict)
+
+    
+LOCAL = AttrDict()
+LOCAL.Now = datetime.now()
+LOCAL.Date = lambda : datetime.date(datetime.now())
+LOCAL.Time = lambda : datetime.time(datetime.now())
+

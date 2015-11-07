@@ -1,19 +1,68 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import winprint
+from .uicore import winprint
 from defusedxml.ElementTree  import parse
-from __init__ import AttrDict
+from . import AttrDict
 from getfontname import get_font_file
 import re
 from base64 import b64decode
 from io import BytesIO
+from . import barcode
+import html
+from datetime import datetime
 
-        
 
-class Paper(AttrDict):
+_PyRptBarCodeMap = {
+    '20' : 'CODE128', #Code128 / Code128A
+    '58' : 'QRCODE', #QRCode
+    '60' : 'CODE128B'  #Code128B    
+    }
+
+_PyRptBandMap = {
+    'ReportTitle' : 'TprtReportTitleBand'
+    
+    }
+
+def tag_to_pyrtp(field):
+
+    d = AttrDict()
+    d.tag = 'TprtLabelField'
+    d.Name = field.Name
+    d.Left = field.Left
+    d.Top = field.Top
+    d.Width = field.Width
+    d.Height = field.Height
+    d.FontColor = field.FontColor
+    d.FontSize = field.FontSize
+    d.FontName = field.FontFamily
+    d.FontFile = field.FontFile
+    d.FontStyle = ','.join([
+        'Underline' if field.FontUnderline == '1' else '',
+        'Strikeout' if field.FontStrikeout == '1' else '',
+        'Italic' if field.FontItalic == '1' else '',
+        'Bold' if field.FontBold == '1' else 'Normal'
+        ]).replace(',,,',',').replace(',,',',')
+    d.HAlign = field.AligmentH[1:]
+    d.VAlign = field.AligmentV[1:]
+    d.Text = field.Value
+    d.Printing = 'True' if field.Printing == '1' else 'False'
+    d.BackgroudColor = field.BackgroudColor
+    d.TextWrap = 'True' if field.TextWrap == '1' else 'False'
+    d.BorderColor = field.BorderColor
+    bs = ['None' if field.BorderTop[:3] == (255,255,255) else field.BorderStyle,
+          'None' if field.BorderRight[:3] == (255,255,255) else field.BorderStyle,
+          'None' if field.BorderBottom[:3] == (255,255,255) else field.BorderStyle,
+          'None' if field.BorderLeft[:3] == (255,255,255) else field.BorderStyle]
+    d.BorderStyle = ','.join(bs)
+    d.BorderWidth = field.BorderWidth
+    d.DisplayFormat = field.DisplayFormat
+    return d
+    
+
+class Page(AttrDict):
     def __init__(self,xmlpaper=None):
-        super(Paper,self).__init__()
+        super(Page,self).__init__()
         if xmlpaper:
             pg=AttrDict(dict(xmlpaper.items()))
             self.MarginsRight=int(pg.marginsRight)/4
@@ -25,6 +74,21 @@ class Paper(AttrDict):
             self.Orientation=int(pg.orientation)
             self.PageNo=int(pg.pageNo)
 
+    def pyrpt(self):
+        d = AttrDict()
+        d.MarginRight = self.MarginsRight
+        d.MarginLeft = self.MarginsLeft
+        d.MarginTop = self.MarginsTop
+        d.MarginBottom = self.MarginsBottom
+        d.Orientation = 'Portrait'  if self.Orientation == '0' else 'Landscape'
+        d.PageHeight = self.PageHeight
+        d.PageWidth = self.PageWidth
+        
+        d.Name = 'Page%s' % self.PageNo
+        d.tag = 'TprtReportPage'
+        d.Unit = d.Unit or 'mm'
+        return d
+
 class Label(AttrDict):
     def __init__(self,label):
         '''
@@ -33,7 +97,10 @@ class Label(AttrDict):
         super(Label,self).__init__()
         self.update(label)
 
-    def draw(self,canvas,margins=(0,0),unit=None):
+    def pyrpt(self):
+        return tag_to_pyrtp(self)
+
+    def draw(self,canvas,margins=(0,0),unit=None,local={}):
         '''
         draw label to printer canvas
         canvas: PrinterCanvas
@@ -41,7 +108,6 @@ class Label(AttrDict):
         '''
         lcan=canvas.clone((self.Width,self.Height))
         pxw,pxh = lcan.size()
-        #print('label font file',self.Name,self.FontFile)
         
         font=lcan.createFont((self.FontFile,self.FontSize))
         lcan.rectangle(((0,0,pxw,pxh)),fill=self.BackgroudColor)
@@ -53,7 +119,6 @@ class Label(AttrDict):
         else:
             wtext = self.Value
         
-        #print('--text',self.Value,'--wrap text',wtext)
         fsz=lcan.multiline_textsize(wtext,font)
         halign = self.AligmentH.lower()[1:]
 
@@ -84,11 +149,20 @@ class Image(AttrDict):
     def __init__(self,label):
         super(Image,self).__init__()
         self.update(label)
+
+    def pyrpt(self):
+        d = tag_to_pyrtp(self)
+        d.tag = 'TprtImageField'
+        d.Image = self.Picture
+        d.Transparent = self.Transparent or 'False'
+        d.TransparentColor = self.TransparentColor
+        return d
         
-    def draw(self,canvas,margins=(0,0),unit=None):
+    def draw(self,canvas,margins=(0,0),unit=None,local={}):
         lcan=canvas.clone((self.Width,self.Height))
         pxw,pxh = lcan.size()
         lcan.rectangle(((0,0,pxw,pxh)),fill=self.BackgroudColor)
+
         bd=int(self.BorderWidth[:-2])
         bdunit=self.BorderWidth[-2:]
         imgb=b64decode(self.Picture)
@@ -96,7 +170,8 @@ class Image(AttrDict):
         img2=img.resize((pxw-bd,pxh-bd))
         
         #lcan.paste(img2,(bd,bd,pxw-bd,pxh-bd),unit='px')
-
+        lcan.paste(img2,(bd,bd),unit='px')
+        
         if bd and self.BorderTop:
             lcan.line((0,0,pxw,0),self.BorderTop,bd,bdunit)
         if bd and self.BorderRight:
@@ -106,9 +181,70 @@ class Image(AttrDict):
         if bd and self.BorderLeft:
             lcan.line((0,0,0,pxh),self.BorderLeft,bd,bdunit)
             
-        lcan.paste(img2,(bd,bd),unit='px')
-        canvas.paste(lcan,(self.Left+margins[0],self.Top+margins[1]),unit=unit)        
+        canvas.paste(lcan,(self.Left+margins[0],self.Top+margins[1]),unit=unit)
 
+class Barcode(AttrDict):
+    def __init__(self,label):
+        super(Barcode,self).__init__()
+        self.update(label)
+
+    def pyrpt(self):
+        d = tag_to_pyrtp(self)
+        d.tag = 'TprtBarCodeField'
+        d.BarType = _PyRptBarCodeMap[self.BarcodeType]
+        return d
+        
+    def draw(self,canvas,margins=(0,0),unit=None,local={}):
+        lcan=canvas.clone((self.Width,self.Height))
+        pxw,pxh = lcan.size()
+        lcan.rectangle(((0,0,pxw,pxh)),fill=self.BackgroudColor)
+        bd=int(self.BorderWidth[:-2])
+        bdunit=self.BorderWidth[-2:]
+
+        #im = self._drawCode(canvas)
+        barcode.drawBarcode(lcan,self)
+        
+        #img2=img.resize((pxw-bd,pxh-bd))
+        
+        #lcan.paste(img,(bd,bd),unit='px')
+        
+        if bd and self.BorderTop:
+            lcan.line((0,0,pxw,0),self.BorderTop,bd,bdunit)
+        if bd and self.BorderRight:
+            lcan.line((pxw-bd,0,pxw-bd,pxh-bd),self.BorderRight,bd,bdunit)
+        if bd and self.BorderBottom:            
+            lcan.line((0,pxh-bd,pxw-bd,pxh-bd),self.BorderTop,bd,bdunit)
+        if bd and self.BorderLeft:
+            lcan.line((0,0,0,pxh),self.BorderLeft,bd,bdunit)
+            
+        canvas.paste(lcan,(self.Left+margins[0],self.Top+margins[1]),unit=unit)
+
+class Rectangle(AttrDict):
+    def __init__(self,label):
+        super(Rectangle,self).__init__()
+        self.update(label)
+
+    def pyrpt(self):
+        d = tag_to_pyrtp(self)
+        d.tag = 'TprtShapeField'
+        d.ShapeType = 'Rectangle'
+        return d
+        
+    def draw(self,canvas,margins=(0,0),unit=None,local={}):
+        lcan=canvas.clone((self.Width,self.Height))
+        pxw,pxh = lcan.size()
+        bd=int(self.BorderWidth[:-2])
+        bdunit=field.BorderWidth[-2:]
+        bdpx = lcan.unitToPixel(bd,bdunit)
+        
+        lcan.rectangle(((0,0,pxw,pxh)),fill=self.BackgroudColor)
+        bdunit = 'px'
+        lcan.line((0,0,pxw,0),self.BorderTop,bd,bdunit)
+        lcan.line((pxw-bdpx,0,pxw-bdpx,pxh-bdpx),self.BorderRight,bd,bdunit)
+        lcan.line((0,pxh-bdpx,pxw-bdpx,pxh-bdpx),self.BorderTop,bd,bdunit)
+        lcan.line((0,0,0,pxh),self.BorderLeft,bd,bdunit)
+        canvas.paste(lcan,(self.Left+margins[0],self.Top+margins[1]),unit=unit)
+        
 class ContainerField(AttrDict):
     '''
       <TContainerField borderTop="rgba(0,0,0,255)" name="field3" autoHeight="0" left="65" borderColor="rgba(0,0,0,255)" borderStyle="solid" backgroundColor="rgba(255,255,255,255)" fontSize="10" width="140" textWrap="1" aligmentH="hLeft" fontUnderline="0" fontStrikeout="0" top="-1" fontItalic="0" printing="1" value="master footer" fontColor="rgba(0,0,0,255)" fontBold="0" fontFamily="SimSun" borderLeft="rgba(0,0,0,255)" aligmentV="vCenter" highlighting="" groupName="" borderWidth="1px" borderBottom="rgba(0,0,0,255)" height="30" type="label" format="" borderRight="rgba(0,0,0,255)"/>
@@ -139,6 +275,8 @@ def createField(xmlfield):
         n=i[0].upper()+i[1:]
         if v.startswith('rgba(') and n != 'Value':
             field[n]=tuple([int(c) for c in re.findall('\d+',v)])
+        elif n == 'Value':
+            field[n] = html.unescape(v)
         else:
             field[n]=v
     field.Width=int(field.Width)/4
@@ -154,6 +292,11 @@ def createField(xmlfield):
         return Label(field)
     elif field.Type == 'image':
         return Image(field)
+    elif field.Type == 'barcode':
+        return Barcode(field)
+    elif field.Type == 'reactangle':
+        return Rectangle(field)
+    
     else:
         return field
     
@@ -175,24 +318,80 @@ class ReportBand(AttrDict):
             if bd.type=='DataGroupHeader':
                 self.StartNewNumeration=int(bd.startNewNumeration)
                 self.StartNewPage=int(bd.startNewPage)
+
             self.Fields=[createField(fld) for fld in xmlband]
 
+    def pyrpt(self):
+        d = AttrDict()
+        d.tag = _PyRptBandMap[self.Type]
+        d.Top = self.Top
+        d.Left = self.Left
+        d.Width = self.Width
+        d.Height = self.Height
+        d.Name = self.Name
+        d._Fields = []
+        d._Fields = [ f.pyrpt and f.pyrpt() or AttrDict() for f in self.Fields]
+        return d
+
+class DataSource(AttrDict):
+    def __init__(self,xmlfield=None):
+        super(DataSource,self).__init__()
+        for i,v in xmlfield.items():
+            n=i[0].upper()+i[1:]
+            if v.startswith('rgba(') and n != 'Value':
+                self[n]=tuple([int(c) for c in re.findall('\d+',v)])
+            else:
+                self[n]=v
+
+    def pyrpt(self):
+        return AttrDict()
+    
 class ReportPage():
     def __init__(self,xmlreport):
-        self.Paper=Paper(xmlreport)
-        self.Bands=[ReportBand(bnd) for bnd in xmlreport]
+        self.Page=Page(xmlreport)
+        self.Bands = []
+        self.DataSource = None
+        for bnd in xmlreport:
+            if bnd.tag == 'DataSource':
+                self.DataSource=DataSource(bnd)
+            elif bnd.tag == 'ReportBand':
+                self.Bands.append(ReportBand(bnd))
 
+    def pyrpt(self):
+        d = self.Page.pyrpt()
+        d._Bands =[b.pyrpt() for b in self.Bands]
+        if self.DataSource :
+            d._DataSource = self.DataSource.pyrpt  and self.DataSource.pyrpt()  or AttrDict() 
+        else:
+            d._DataSource = AttrDict() 
+
+        return d
 
 class QTRPT():
     '''
     QTRP file  compatible
     '''
-    def __init__(self,filename=''):
+    def __init__(self,filename='',):
         self.Pages=[]
-        self.Printer=winprint.WinPrinter()
+        #self.Printer=winprint.WinPrinter()
         self.ReportFile=filename
         if filename:
             self.loadFromFile(filename)
+        self.DataSource=AttrDict()
+
+    def pyrpt(self):
+        d = AttrDict()
+        d.Version = '0.1'
+        d.Lib = 'PyRpt'
+        d.tag = 'TprtReports'
+        pgs=[p.pyrpt() for p in self.Pages]
+        dts=[]
+        for p in pgs:
+            dts.append(p._DataSource)
+            del p._DataSource
+        d._Pages = pgs
+        d._DataSource = dts
+        return d
 
     def loadFromFile(self,filename):
         xmlf=parse(filename)
@@ -205,18 +404,18 @@ class QTRPT():
     def drawReport(self):
         if not self.Printer.isReady():
             return
+
         for p in self.Pages:
-            if p.Paper.Orientation == 1:
-                sz=(p.Paper.PageHeight,p.Paper.PageWidth)
+            if p.Page.Orientation == '1':
+                sz=(p.Page.PageHeight,p.Page.PageWidth)
             else:
-                sz=(p.Paper.PageWidth,p.Paper.PageHeight)
+                sz=(p.Page.PageWidth,p.Page.PageHeight)
             self.CurrentCanvas=pg=self.Printer.newPage(sz)
             boffset=0
             for bnd in p.Bands:
                 for fld in bnd.Fields:
-                    #print('file',fld.Name)
                     if fld.Printing == '1' and fld.draw:
-                        fld.draw(pg,(bnd.Left,boffset))
+                        fld.draw(pg,(bnd.Left,boffset),local=local)
                 boffset += (bnd.Height or 0)
         return True
             

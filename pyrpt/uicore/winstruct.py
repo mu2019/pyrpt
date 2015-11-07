@@ -3,7 +3,7 @@
 from __future__ import absolute_import
 import sys
 from ctypes import *
-from wintypes import *
+from .wintypes import *
 
 from ctypes import \
     c_int, c_uint, c_long, c_ulong, c_void_p, c_wchar, c_char, \
@@ -12,13 +12,13 @@ from ctypes import \
 
 from ctypes import Structure as _Structure
 
-from wincons import LF_FACESIZE
+from .wincons import LF_FACESIZE
 
 "Definition of Windows structures"
 
 __revision__ = "$Revision$"
 
-import sysinfo
+from . import sysinfo
 
 class Structure(_Structure):
     #_pack_=2

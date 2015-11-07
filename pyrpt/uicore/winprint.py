@@ -3,9 +3,9 @@
 
 import ctypes
 from ctypes import windll # gdi32
-from wintypes import * #BYTE, DWORD, LPCWSTR
-import wincons as wcs
-import winstruct as wst
+from .wintypes import * #BYTE, DWORD, LPCWSTR
+from . import wincons as wcs
+from . import winstruct as wst
 from PIL import ImageWin,Image,ImageDraw,ImageFont
 import time
 
@@ -227,7 +227,7 @@ class PrinterCanvas():
     def clone(self,size):
         '''
         clone the canvas in size
-        size: tuple,canvas size
+        size: tuple,canvas size (width,height)
         '''
         return PrinterCanvas(self._DCInfo,size,self.Unit)
 
@@ -308,6 +308,7 @@ class PrinterCanvas():
         self._Draw.polygon(xy, fill, outline)
 
     def rectangle(self,xy, fill=None, outline=None,unit=None):
+        xy = self.unitToPixel(xy,unit)
         self._Draw.rectangle(xy, fill, outline)
 
     def size(self,unit='px'):
@@ -417,19 +418,20 @@ class WinPrinter:
         #print('WinPrinter.__del__')
         pass
 
-    def newPage(self,size=()):#page={}):
+    def newPage(self,size=(),unit='mm'):#page={}):
         '''
         新建画页
         在获取新打印DC或修改打印机设置后重新创建画页
         新页面将追加到Pages后面
         创建失败返回空
-        size:畫布大小,A 3-tuple, containing (width, height,unit),unit default in mm.
+        size:畫布大小,A tuple, containing (width, height)
+        unit:unit default in mm.
         '''
         if not self.PrinterInfo:
             return
         if not size:
             size=(self.PrinterInfo['PixelWidth'],self.PrinterInfo['PixelHeight'],'px')
-        pg=PrinterCanvas(self.PrinterInfo,size) #'RGB',(self.PrinterInfo['PixelWidth'],self.PrinterInfo['PixelHeight']),'white')
+        pg=PrinterCanvas(self.PrinterInfo,size,unit) #'RGB',(self.PrinterInfo['PixelWidth'],self.PrinterInfo['PixelHeight']),'white')
         self.Pages.append(pg)
         return pg
 
