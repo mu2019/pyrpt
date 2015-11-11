@@ -245,7 +245,8 @@ class PrinterCanvas():
             font=ImageFont.truetype(**fnt)
         return font
       
-    def ellipse(xy, fill=None, outline=None,unit=None):
+    def ellipse(self,xy, fill=None, outline=None,unit=None):
+        xy=self.unitToPixel(xy,unit)
         self._Draw.ellipse(xy, fill, outline)
 
     def inchToPixel(self,inch):
@@ -434,7 +435,15 @@ class WinPrinter:
         pg=PrinterCanvas(self.PrinterInfo,size,unit) #'RGB',(self.PrinterInfo['PixelWidth'],self.PrinterInfo['PixelHeight']),'white')
         self.Pages.append(pg)
         return pg
-
+    
+    @staticmethod
+    def getDefaultPrinterName():
+        return getDefaultPrinterName()
+    
+    @staticmethod
+    def getPrintersName():
+        return  getPrintersName()
+    
     def isReady(self):
         return self.PrinterDC!=None
         
@@ -444,6 +453,7 @@ class WinPrinter:
         self.PrinterDlg=selectPrinterByDlg()
         self.PrinterDC=self.PrinterDlg.hDC if self.PrinterDlg else None
         self.PrinterInfo=getPrinterInfoByDC(self.PrinterDC)
+        return self.PrinterDC
 
             
     def selectByName(self,printer_name):

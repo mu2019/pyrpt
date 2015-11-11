@@ -40,19 +40,20 @@ class RptPrint():
         elif field.tag == 'TprtBarCodeField':
             field.Value = self.Report.parseValue(field)
             barcode.drawBarcode(canv,field)
-
-        bds = field.BorderStyle.split(',')
-        bds.extend([bds[-1]]*4)
+        elif field.tag == 'TprtShapeField':
+            self.drawShape(canv,field)
         pxw,pxh = canv.size()
-            
-        if bds[0] == 'solid':
-            canv.line((0,0,pxw,0),field.BorderColor,bd,bdunit)
-        if bds[1] == 'solid' :
-            canv.line((pxw-bd,0,pxw-bd,pxh-bd),field.BorderColor,bd,bdunit)
-        if bds[2] == 'solid' : 
-            canv.line((0,pxh-bd,pxw-bd,pxh-bd),field.BorderColor,bd,bdunit)
-        if bds[2] == 'solid' : 
-            canv.line((0,0,0,pxh),field.BorderColor,bd,bdunit)
+        if field.tag != 'TprtShapeField':
+            bds = field.BorderStyle.split(',')
+            bds.extend([bds[-1]]*4)
+            if bds[0] == 'solid':
+                canv.line((0,0,pxw,0),field.BorderColor,bd,bdunit)
+            if bds[1] == 'solid' :
+                canv.line((pxw-bd,0,pxw-bd,pxh-bd),field.BorderColor,bd,bdunit)
+            if bds[2] == 'solid' : 
+                canv.line((0,pxh-bd,pxw-bd,pxh-bd),field.BorderColor,bd,bdunit)
+            if bds[2] == 'solid' : 
+                canv.line((0,0,0,pxh),field.BorderColor,bd,bdunit)
         return canv
 
     def drawImage(self,canvas,field):
@@ -70,6 +71,18 @@ class RptPrint():
             canvas.paste(img2,(bd,bd),unit=bdunit)
         except Exception as e:
             print(e)
+
+    def drawShape(self,canvas,field):
+        pxw,pxh = canvas.size()
+        bd=int(field.BorderWidth[:-2])
+        bdunit=field.BorderWidth[-2:]
+        bdpx = canvas.unitToPixel(bd,bdunit)
+        canvas.rectangle(((0,0,pxw,pxh)),fill=field.BackgroudColor,unit='px')
+        if field.ShapeType == 'Circle':
+            canvas.ellipse((0+bdpx,0+bdpx,pxw-bdpx,pxh-bdpx),outline=field.BorderColor,unit='px')
+        elif field.ShapeType == 'Rectangle':
+            canvas.rectangle((0+bdpx,0+bdpx,pxw-bdpx,pxh-bdpx),outline=field.BorderColor,unit='px')
+
 
     def drawBand(self,page,band):
         '''

@@ -219,6 +219,18 @@ class Barcode(AttrDict):
             
         canvas.paste(lcan,(self.Left+margins[0],self.Top+margins[1]),unit=unit)
 
+class Circle(AttrDict):
+    def __init__(self,label):
+        super(Circle,self).__init__()
+        self.update(label)
+
+    def pyrpt(self):
+        d = tag_to_pyrtp(self)
+        d.tag = 'TprtShapeField'
+        d.ShapeType = 'Circle'
+        return d
+
+
 class Rectangle(AttrDict):
     def __init__(self,label):
         super(Rectangle,self).__init__()
@@ -296,6 +308,8 @@ def createField(xmlfield):
         return Barcode(field)
     elif field.Type == 'reactangle':
         return Rectangle(field)
+    elif field.Type == 'circle':
+        return Circle(field)
     
     else:
         return field

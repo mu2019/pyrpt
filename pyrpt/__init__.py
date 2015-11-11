@@ -3,6 +3,7 @@
 
 from collections import OrderedDict
 from datetime import datetime
+from .uicore import winprint
 
 class AttrDict(object):
     def __init__(self,dict_data={},read_only=False):
